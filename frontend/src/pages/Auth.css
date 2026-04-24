@@ -1,21 +1,35 @@
+:root {
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --bg-soft: #f8fafc;
+  --white: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --error: #ef4444;
+}
+
 .auth-container {
   width: 100vw;
   height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f0f0f0;
+  background: radial-gradient(circle at top left, #eff6ff 0%, #f8fafc 100%);
   position: fixed;
   top: 0;
   left: 0;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .auth-card {
-  background: #f5f5f5;
+  background: var(--white);
   border-radius: 24px;
-  padding: 48px 40px;
-  width: 460px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  padding: 40px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+  border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
 .auth-header {
@@ -24,42 +38,34 @@
 }
 
 .auth-logo {
-  width: 56px;
-  height: 56px;
-  background: #e8e8e8;
-  border-radius: 16px;
+  width: 64px;
+  height: 64px;
+  background: #eff6ff;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
+  color: var(--primary);
+  transition: transform 0.3s ease;
 }
 
-.auth-logo svg {
-  width: 32px;
-  height: 32px;
-  stroke: #3b82f6;
-  stroke-width: 1.5;
+.auth-logo:hover {
+  transform: rotate(-5deg) scale(1.05);
 }
 
 .auth-header h1 {
-  all: initial;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  font-size: 28px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 8px;
-  display: block;
-  text-align: center;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0;
+  letter-spacing: -0.5px;
 }
 
 .auth-header p {
-  all: initial;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 14px;
-  color: #666666;
-  display: block;
-  text-align: center;
-  margin-top: 8px;
+  color: var(--text-muted);
+  margin-top: 6px;
 }
 
 .auth-form {
@@ -67,7 +73,7 @@
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .input-group {
@@ -76,139 +82,115 @@
   align-items: center;
 }
 
+.input-group input {
+  width: 100%;
+  padding: 14px 16px 14px 45px;
+  font-size: 15px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-soft);
+  color: var(--text-main);
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.input-group input:focus {
+  border-color: var(--primary);
+  background: var(--white);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
 .input-icon {
   position: absolute;
-  left: 16px;
+  left: 15px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
   display: flex;
   align-items: center;
-  justify-content: center;
   pointer-events: none;
 }
 
 .input-icon svg {
   width: 18px;
   height: 18px;
-  stroke: #999999;
-  stroke-width: 1.5;
-  fill: none;
-}
-
-.input-group input {
-  all: initial;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  width: 100%;
-  padding: 14px 16px 14px 48px;
-  font-size: 15px;
-  border: 1px solid #dddddd;
-  border-radius: 12px;
-  background: #ffffff;
-  color: #1a1a1a;
-  box-sizing: border-box;
-}
-
-.input-group input:focus {
-  border-color: #3b82f6;
-  outline: none;
-}
-
-.input-group input::placeholder {
-  color: #bbbbbb;
 }
 
 .password-toggle {
-  all: initial;
   position: absolute;
-  right: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.password-toggle svg {
-  width: 18px;
-  height: 18px;
-  stroke: #999999;
-  stroke-width: 1.5;
-  fill: none;
-}
-
-.password-toggle:hover svg {
-  stroke: #666666;
-}
-
-.auth-options {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
-  font-size: 14px;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #555555;
-  cursor: pointer;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-}
-
-.checkbox-label input {
-  width: 16px;
-  height: 16px;
-  margin: 0;
-  cursor: pointer;
-}
-
-.forgot-link {
-  all: initial;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: #3b82f6;
-  text-decoration: none;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.forgot-link:hover {
-  text-decoration: underline;
-}
-
-.auth-btn {
-  all: initial;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  width: 100%;
-  padding: 14px;
-  background: #3b82f6;
-  color: #ffffff;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
   border: none;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 500;
-  text-align: center;
   cursor: pointer;
-  display: block;
-  box-sizing: border-box;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-radius: 8px;
   transition: background 0.2s;
 }
 
-.auth-btn:hover {
-  background: #2563eb;
+.password-toggle:hover {
+  background: #eff6ff;
+}
+
+.password-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+.auth-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary);
+  color: var(--white);
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 10px;
+}
+
+.auth-btn:hover:not(:disabled) {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 
 .auth-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
+}
+
+.auth-message {
+  padding: 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.error-message {
+  background: #fef2f2;
+  color: var(--error);
+  border: 1px solid #fee2e2;
 }
 
 .auth-divider {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   margin: 24px 0;
-  color: #999999;
-  font-size: 13px;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .auth-divider::before,
@@ -216,81 +198,47 @@
   content: '';
   flex: 1;
   height: 1px;
-  background: #dddddd;
+  background: var(--border-color);
 }
 
-.social-buttons {
-  display: flex;
+.social-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-bottom: 24px;
 }
 
 .social-btn {
-  all: initial;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   padding: 12px;
-  background: #ffffff;
-  border: 1px solid #dddddd;
-  border-radius: 12px;
+  background: var(--white);
+  border: 1.5px solid var(--border-color);
+  border-radius: 14px;
   font-size: 14px;
-  font-weight: 500;
-  color: #333333;
+  font-weight: 600;
+  color: var(--text-main);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .social-btn:hover {
-  background: #fafafa;
-  border-color: #cccccc;
-}
-
-.social-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.auth-message {
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-size: 14px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-}
-
-.error-message {
-  background: #fee;
-  color: #dc2626;
-  border: 1px solid #fcc;
-}
-
-.success-message {
-  background: #e6f7e6;
-  color: #10b981;
-  border: 1px solid #b3e6b3;
+  background: var(--bg-soft);
+  border-color: #cbd5e1;
 }
 
 .auth-footer {
   text-align: center;
   font-size: 14px;
-  color: #666666;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: var(--text-muted);
 }
 
 .auth-footer a {
-  all: initial;
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  color: #3b82f6;
-  font-weight: 500;
-  cursor: pointer;
-  margin-left: 4px;
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 5px;
 }
 
 .auth-footer a:hover {

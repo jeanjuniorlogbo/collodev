@@ -1,3 +1,5 @@
+-- slmgr /ato
+
 CREATE DATABASE IF NOT EXISTS collodev;
 USE collodev;
 
