@@ -157,7 +157,7 @@ def handle_dashboard(environ, start_response):
                 FROM projects p
                 WHERE p.owner_id = ? OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?)
                 ORDER BY p.created_at DESC
-                LIMIT 5
+                LIMIT 6
             """, (user_id, user_id))
             projects = cursor.fetchall()
             
@@ -186,7 +186,8 @@ def handle_dashboard(environ, start_response):
                     'is_public': p[4],
                     'created_at': p[5],
                     'total_tasks': p[6],
-                    'completed_tasks': p[7]
+                    'completed_tasks': p[7],
+                    'user_role': 'admin' if p[3] == user_id else 'member'
                 })
             
             return json_response(start_response, 200, {
@@ -236,9 +237,10 @@ def handle_get_projects(environ, start_response):
                     'name': p[1],
                     'description': p[2],
                     'owner_id': p[3],
+                    'owner_name': p[6],
                     'is_public': p[4],
                     'created_at': p[5],
-                    'owner_name': p[6]
+                    'user_role': 'admin' if p[3] == user_id else 'member'
                 })
             
             return json_response(start_response, 200, {'success': True, 'projects': projects_list})
@@ -246,6 +248,85 @@ def handle_get_projects(environ, start_response):
             conn.close()
     except Exception as e:
         print(f"Erreur get_projects: {e}")
+        return json_response(start_response, 500, {'success': False})
+
+@require_auth
+def handle_get_project(environ, start_response):
+    try:
+        path_parts = environ.get('PATH_INFO', '').split('/')
+        project_id = path_parts[-1] if len(path_parts) > 2 else None
+        
+        if not project_id:
+            return json_response(start_response, 400, {'success': False, 'message': 'ID projet requis'})
+        
+        user = environ['user']
+        user_id = user['user_id']
+        conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.*, u.username as owner_name
+                FROM projects p
+                JOIN users u ON p.owner_id = u.id
+                WHERE p.id = ? AND (p.owner_id = ? OR p.id IN (SELECT project_id FROM project_members WHERE user_id = ?))
+            """, (project_id, user_id, user_id))
+            project = cursor.fetchone()
+            
+            if not project:
+                return json_response(start_response, 404, {'success': False, 'message': 'Projet non trouve'})
+            
+            cursor.execute("""
+                SELECT u.id, u.username, u.email, pm.role
+                FROM project_members pm
+                JOIN users u ON pm.user_id = u.id
+                WHERE pm.project_id = ?
+            """, (project_id,))
+            members = cursor.fetchall()
+            
+            members_list = []
+            for m in members:
+                members_list.append({
+                    'id': m[0],
+                    'username': m[1],
+                    'email': m[2],
+                    'role': m[3]
+                })
+            
+            cursor.execute("""
+                SELECT * FROM tasks WHERE project_id = ? ORDER BY created_at DESC
+            """, (project_id,))
+            tasks = cursor.fetchall()
+            
+            tasks_list = []
+            for t in tasks:
+                tasks_list.append({
+                    'id': t[0],
+                    'title': t[4],
+                    'description': t[5],
+                    'priority': t[6],
+                    'status': t[7],
+                    'due_date': t[8],
+                    'created_at': t[9]
+                })
+            
+            return json_response(start_response, 200, {
+                'success': True,
+                'project': {
+                    'id': project[0],
+                    'name': project[1],
+                    'description': project[2],
+                    'owner_id': project[3],
+                    'owner_name': project[11],
+                    'is_public': project[4],
+                    'created_at': project[5]
+                },
+                'members': members_list,
+                'tasks': tasks_list
+            })
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Erreur get_project: {e}")
         return json_response(start_response, 500, {'success': False})
 
 @require_auth
@@ -294,7 +375,7 @@ def handle_get_friends(environ, start_response):
         try:
             cursor = conn.cursor()
             cursor.execute("""
-                SELECT u.id, u.username, u.email, u.avatar, f.status, f.created_at
+                SELECT u.id, u.username, u.email, f.status, f.created_at
                 FROM friendships f
                 JOIN users u ON (f.friend_id = u.id OR f.user_id = u.id)
                 WHERE (f.user_id = ? OR f.friend_id = ?) AND u.id != ?
@@ -308,9 +389,8 @@ def handle_get_friends(environ, start_response):
                     'id': f[0],
                     'username': f[1],
                     'email': f[2],
-                    'avatar': f[3],
-                    'status': f[4],
-                    'since': f[5]
+                    'status': f[3],
+                    'since': f[4]
                 })
             
             return json_response(start_response, 200, {'success': True, 'friends': friends_list})
@@ -432,6 +512,9 @@ def application(environ, start_response):
     path = environ.get('PATH_INFO', '')
     method = environ.get('REQUEST_METHOD', 'GET')
     
+    if path.startswith('/api/projects/') and method == 'GET':
+        handle_get_project(environ, start_response)
+    
     if method == 'OPTIONS':
         return handle_options(environ, start_response)
     
@@ -445,17 +528,24 @@ if __name__ == '__main__':
     print("Initialisation de la base de donnees...")
     init_database()
     print("Serveur ColloDev demarre sur http://localhost:3000")
-    print("Endpoint: POST /api/register")
-    print("Endpoint: POST /api/login")
-    print("Endpoint: POST /api/logout")
-    print("Endpoint: GET /api/dashboard")
-    print("Endpoint: GET /api/projects")
-    print("Endpoint: POST /api/projects")
-    print("Endpoint: GET /api/friends")
-    print("Endpoint: GET /api/friends/requests")
-    print("Endpoint: POST /api/friends/send")
-    print("Endpoint: POST /api/friends/accept")
-    print("Compte admin: admin@collodev.com / admin123")
-    print("Compte jean: jean@collodev.com / admin123")
+    print("")
+    print("ENDPOINTS DISPONIBLES:")
+    print("  POST /api/register")
+    print("  POST /api/login")
+    print("  POST /api/logout")
+    print("  GET  /api/dashboard")
+    print("  GET  /api/projects")
+    print("  POST /api/projects")
+    print("  GET  /api/projects/{id}")
+    print("  GET  /api/friends")
+    print("  GET  /api/friends/requests")
+    print("  POST /api/friends/send")
+    print("  POST /api/friends/accept")
+    print("")
+    print("COMPTES DE TEST:")
+    print("  admin@collodev.com / admin123")
+    print("  jean@collodev.com / admin123")
+    print("")
+    print("Serveur demarre sur http://localhost:3000")
     
     make_server('0.0.0.0', 3000, application).serve_forever()
