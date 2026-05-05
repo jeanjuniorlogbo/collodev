@@ -8,7 +8,7 @@ function Home() {
     projects: [],
     tasks: [],
     friends: [],
-    stats: { projects: { total: 118, inProgress: 18, completed: 100 } }
+    stats: { projects: { total: 0, inProgress: 0, completed: 0 } }
   })
   const [isLoading, setIsLoading] = useState(true)
   const [showProjectModal, setShowProjectModal] = useState(false)
@@ -16,21 +16,37 @@ function Home() {
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [newProject, setNewProject] = useState({ name: '', description: '' })
   const [currentPage, setCurrentPage] = useState('dashboard')
+  const [invitations, setInvitations] = useState([])
+  const [searchUser, setSearchUser] = useState('')
+  const [searchResults, setSearchResults] = useState([])
+  const [selectedUser, setSelectedUser] = useState(null)
+  const [showPreview, setShowPreview] = useState(false)
+
+  const getSessionId = () => localStorage.getItem('session_id')
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      const sessionId = localStorage.getItem('session_id')
+      const sessionId = getSessionId()
       if (!sessionId) {
         window.location.href = '/login'
         return
       }
 
       try {
-        const [dashboardRes, friendsRes] = await Promise.all([
+        const [dashboardRes, friendsRes, projectsRes, tasksRes, invitesRes] = await Promise.all([
           fetch('http://localhost:3000/api/dashboard', {
             headers: { 'X-Session-ID': sessionId }
           }),
           fetch('http://localhost:3000/api/friends', {
+            headers: { 'X-Session-ID': sessionId }
+          }),
+          fetch('http://localhost:3000/api/projects', {
+            headers: { 'X-Session-ID': sessionId }
+          }),
+          fetch('http://localhost:3000/api/tasks', {
+            headers: { 'X-Session-ID': sessionId }
+          }),
+          fetch('http://localhost:3000/api/friends/requests', {
             headers: { 'X-Session-ID': sessionId }
           })
         ])
@@ -44,19 +60,47 @@ function Home() {
 
         const dashboard = await dashboardRes.json()
         const friends = await friendsRes.json()
+        const projects = await projectsRes.json()
+        const tasks = await tasksRes.json()
+        const invites = await invitesRes.json()
 
         if (dashboard.success) {
+          const totalProjects = dashboard.stats.activeProjects || 0
+          const inProgressProjects = projects.projects?.filter(p => p.status === 'in_progress').length || 0
+          const completedProjects = projects.projects?.filter(p => p.status === 'done').length || 0
+
+          const totalTasks = tasks.tasks?.length || 0
+          const inProgressTasks = tasks.tasks?.filter(t => t.status === 'in_progress').length || 0
+          const completedTasks = tasks.tasks?.filter(t => t.status === 'done').length || 0
+
+          const totalFriends = friends.friends?.length || 0
+          const pendingFriends = friends.friends?.filter(f => f.status === 'pending').length || 0
+
           setData({
             user: dashboard.user,
-            projects: dashboard.projects || [],
-            tasks: dashboard.tasks || [],
+            projects: projects.projects || [],
+            tasks: tasks.tasks || [],
             friends: friends.friends || [],
             stats: {
-              projects: { total: 118, inProgress: 18, completed: 100 },
-              tasks: { total: 15, inProgress: 0, completed: 0 },
-              friends: { total: 0, inProgress: 0, cancel: 0 }
+              projects: { 
+                total: totalProjects, 
+                inProgress: inProgressProjects, 
+                completed: completedProjects 
+              },
+              tasks: { 
+                total: totalTasks, 
+                inProgress: inProgressTasks, 
+                completed: completedTasks 
+              },
+              friends: { 
+                total: totalFriends, 
+                inProgress: pendingFriends, 
+                cancel: 0 
+              }
             }
           })
+
+          setInvitations(invites.requests || [])
         }
       } catch (error) {
         console.error("Erreur fetch:", error)
@@ -70,7 +114,7 @@ function Home() {
 
   const handleCreateProject = async () => {
     if (!newProject.name.trim()) return
-    const sessionId = localStorage.getItem('session_id')
+    const sessionId = getSessionId()
     try {
       const response = await fetch('http://localhost:3000/api/projects', {
         method: 'POST',
@@ -88,6 +132,114 @@ function Home() {
       }
     } catch (error) {
       console.error("Erreur creation projet:", error)
+    }
+  }
+
+  useEffect(() => {
+    if (!searchUser.trim()) {
+      setSearchResults([])
+      setShowPreview(false)
+      setSelectedUser(null)
+      return
+    }
+
+    const delayDebounce = setTimeout(() => {
+      searchUsers()
+    }, 500)
+
+    return () => clearTimeout(delayDebounce)
+  }, [searchUser])
+
+  const searchUsers = async () => {
+    const sessionId = getSessionId()
+    if (!sessionId) {
+      console.error("Session ID manquant")
+      return
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/users/search?q=${encodeURIComponent(searchUser)}`, {
+        headers: { 
+          'X-Session-ID': sessionId,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.status === 401) {
+        localStorage.removeItem('session_id')
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+        return
+      }
+
+      const result = await response.json()
+      if (result.success && result.users.length > 0) {
+        setSearchResults(result.users)
+        setSelectedUser(result.users[0])
+        setShowPreview(true)
+      } else {
+        setSearchResults([])
+        setSelectedUser(null)
+        setShowPreview(false)
+      }
+    } catch (error) {
+      console.error("Erreur recherche:", error)
+    }
+  }
+
+  const handleSendFriendRequest = async () => {
+    if (!selectedUser) return
+    const sessionId = getSessionId()
+    try {
+      const response = await fetch('http://localhost:3000/api/friends/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': sessionId
+        },
+        body: JSON.stringify({ user_id: selectedUser.id })
+      })
+      const result = await response.json()
+      if (result.success) {
+        alert('Demande envoyee a ' + selectedUser.username)
+        setShowFriendModal(false)
+        setSearchUser('')
+        setSearchResults([])
+        setSelectedUser(null)
+        setShowPreview(false)
+        window.location.reload()
+      } else {
+        alert(result.message)
+      }
+    } catch (error) {
+      console.error("Erreur envoi demande:", error)
+    }
+  }
+
+  const handleSelectUser = (user) => {
+    setSelectedUser(user)
+    setShowPreview(true)
+    setSearchResults([])
+  }
+
+  const handleAcceptInvitation = async (requestId) => {
+    const sessionId = getSessionId()
+    try {
+      const response = await fetch('http://localhost:3000/api/friends/accept', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Session-ID': sessionId
+        },
+        body: JSON.stringify({ request_id: requestId })
+      })
+      const result = await response.json()
+      if (result.success) {
+        alert('Ami ajoute')
+        window.location.reload()
+      }
+    } catch (error) {
+      console.error("Erreur acceptation:", error)
     }
   }
 
@@ -127,6 +279,7 @@ function Home() {
                 <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
               </svg>
               Invitations
+              {invitations.length > 0 && <span className="badge">{invitations.length}</span>}
             </button>
           </div>
 
@@ -204,7 +357,9 @@ function Home() {
                       </div>
                       <div className="detail-cell">
                         <span>État du projet</span>
-                        <strong className="status-badge">En cours</strong>
+                        <strong className="status-badge">
+                          {project.is_public ? 'Public' : 'Privé'}
+                        </strong>
                       </div>
                       <div className="detail-cell">
                         <span>Mon statut</span>
@@ -259,10 +414,67 @@ function Home() {
         <div className="modal-overlay" onClick={() => setShowFriendModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h3>Ajouter un ami</h3>
-            <input type="email" placeholder="Email de l'ami" />
+            <div className="search-container">
+              <div className="search-input-group">
+                <input
+                  type="text"
+                  placeholder="Nom d'utilisateur ou email..."
+                  value={searchUser}
+                  onChange={(e) => setSearchUser(e.target.value)}
+                  autoFocus
+                />
+              </div>
+              
+              {showPreview && selectedUser && (
+                <div className="user-preview">
+                  <div className="user-preview-avatar">
+                    {selectedUser.username?.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="user-preview-info">
+                    <div className="user-preview-name">{selectedUser.username}</div>
+                    <div className="user-preview-email">{selectedUser.email}</div>
+                  </div>
+                </div>
+              )}
+
+              {searchResults.length > 1 && !showPreview && (
+                <div className="search-results">
+                  {searchResults.map((user) => (
+                    <div key={user.id} className="search-result-item" onClick={() => handleSelectUser(user)}>
+                      <div className="user-info">
+                        <div className="user-avatar-small">
+                          {user.username?.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div className="user-name">{user.username}</div>
+                          <div className="user-email">{user.email}</div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             <div className="modal-buttons">
-              <button onClick={() => setShowFriendModal(false)} className="btn-secondary">Annuler</button>
-              <button className="btn-primary">Inviter</button>
+              <button 
+                onClick={() => {
+                  setShowFriendModal(false)
+                  setSearchUser('')
+                  setSearchResults([])
+                  setSelectedUser(null)
+                  setShowPreview(false)
+                }} 
+                className="btn-secondary"
+              >
+                Annuler
+              </button>
+              <button 
+                onClick={handleSendFriendRequest} 
+                className="btn-primary"
+                disabled={!selectedUser}
+              >
+                Inviter
+              </button>
             </div>
           </div>
         </div>
@@ -272,9 +484,33 @@ function Home() {
         <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <h3>Invitations en attente</h3>
-            <div className="empty-state" style={{ padding: '20px' }}>
-              Aucune invitation en attente
-            </div>
+            {invitations.length === 0 ? (
+              <div className="empty-state" style={{ padding: '20px' }}>
+                Aucune invitation en attente
+              </div>
+            ) : (
+              <div className="invitations-list">
+                {invitations.map((invite) => (
+                  <div key={invite.id} className="invitation-item">
+                    <div className="invitation-info">
+                      <div className="user-avatar-small">
+                        {invite.username?.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <strong>{invite.username}</strong>
+                        <span>{invite.email}</span>
+                      </div>
+                    </div>
+                    <button 
+                      className="btn-primary"
+                      onClick={() => handleAcceptInvitation(invite.id)}
+                    >
+                      Accepter
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="modal-buttons">
               <button onClick={() => setShowInviteModal(false)} className="btn-secondary">Fermer</button>
             </div>

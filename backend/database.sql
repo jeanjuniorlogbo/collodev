@@ -96,8 +96,8 @@ CREATE TABLE IF NOT EXISTS logs (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
-INSERT OR IGNORE INTO users (id, username, email, password_hash) VALUES (1, 'admin', 'admin@collodev.com', '0c142c47f290714f6d7e1b7caffb3342bc9ce612572a772c8131ac3e08b5d6f8');
-INSERT OR IGNORE INTO users (id, username, email, password_hash) VALUES (2, 'jean', 'jean@collodev.com', '0c142c47f290714f6d7e1b7caffb3342bc9ce612572a772c8131ac3e08b5d6f8');
+INSERT OR IGNORE INTO users (id, username, email, password_hash) VALUES (1, 'admin', 'admin@collodev.com', '5b5866a35ac5ff09bf369a1c97e5ca720672ae5f16374f43023cb2edb196ee20');
+INSERT OR IGNORE INTO users (id, username, email, password_hash) VALUES (2, 'jean', 'jean@collodev.com', '5b5866a35ac5ff09bf369a1c97e5ca720672ae5f16374f43023cb2edb196ee20');
 
 INSERT OR IGNORE INTO friendships (user_id, friend_id, status) VALUES (1, 2, 'accepted');
 
@@ -124,3 +124,5 @@ INSERT OR IGNORE INTO tasks (id, project_id, author_id, assigned_to, title, prio
 INSERT OR IGNORE INTO snippets (id, project_id, user_id, title, code_content, language) VALUES (1, 1, 1, 'useSession hook', 'const useSession = () => { return session; }', 'javascript');
 
 INSERT OR IGNORE INTO logs (project_id, user_id, action) VALUES (1, 1, 'a créé le projet ARES');
+
+-- 3;#mmX##8_WLEi~
